@@ -14,6 +14,7 @@ import '../../bookings/repository/booking_repository.dart';
 import '../models/slot.dart';
 import '../providers/venue_provider.dart';
 import '../widgets/slot_tile.dart';
+import '../../../shared/widgets/motion_widgets.dart';
 
 /// Venue detail screen — date picker + slot grid + booking flow.
 ///
@@ -197,6 +198,23 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
     }
   }
 
+  Color get _sportColor {
+    switch (widget.sportType.toLowerCase()) {
+      case 'badminton':
+        return AppTheme.primaryColor;
+      case 'football':
+        return const Color(0xFF4CAF50);
+      case 'cricket':
+        return const Color(0xFFFF9800);
+      case 'tennis':
+        return const Color(0xFF2196F3);
+      case 'basketball':
+        return const Color(0xFFFF5722);
+      default:
+        return AppTheme.primaryColor;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final slotsAsync = ref.watch(slotsProvider(_slotKey));
@@ -212,183 +230,225 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
       appBar: AppBar(
         title: Text(widget.venueName),
       ),
-      body: Column(
-        children: [
-          // Sport type badge
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    widget.sportType,
-                    style: const TextStyle(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.refresh_rounded,
-                  size: 14,
-                  color: AppTheme.textMuted,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Auto-refresh every ${AppConstants.slotPollIntervalSeconds}s',
-                  style: const TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Date selector (horizontal scrolling)
-          SizedBox(
-            height: 72,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: dates.length,
-              itemBuilder: (context, index) {
-                final date = dates[index];
-                final isSelected = date == _selectedDate;
-                final dt = DateTime.parse(date);
-
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedDate = date);
-                  },
-                  child: Container(
-                    width: 56,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppTheme.primaryColor
-                          : AppTheme.cardColor,
-                      borderRadius: BorderRadius.circular(14),
-                      border: isSelected
-                          ? null
-                          : Border.all(
-                              color: AppTheme.textMuted.withValues(alpha: 0.2)),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _dayName(dt),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: isSelected
-                                ? Colors.white.withValues(alpha: 0.7)
-                                : AppTheme.textMuted,
-                          ),
+      body: BackgroundGlow(
+        customColors: [
+          _sportColor.withValues(alpha: 0.08),
+          AppTheme.surfaceLight.withValues(alpha: 0.1),
+        ],
+        child: Column(
+          children: [
+            // Sport type badge + refresh indicator
+            EntranceAnimation(
+              delay: Duration.zero,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _sportColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        widget.sportType,
+                        style: TextStyle(
+                          color: _sportColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${dt.day}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? Colors.white
-                                : AppTheme.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          _monthName(dt),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isSelected
-                                ? Colors.white.withValues(alpha: 0.7)
-                                : AppTheme.textMuted,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Slot legend
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _legendDot(AppTheme.slotAvailable, 'Available'),
-                const SizedBox(width: 16),
-                _legendDot(AppTheme.slotBooked, 'Booked'),
-                const SizedBox(width: 16),
-                _legendDot(AppTheme.slotBookedByMe, 'Yours'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Slot grid
-          Expanded(
-            child: slotsAsync.when(
-              loading: () =>
-                  const AppLoadingWidget(message: 'Loading slots...'),
-              error: (error, stack) => AppErrorWidget(
-                message: error.toString(),
-                onRetry: () => ref.invalidate(slotsProvider(_slotKey)),
+                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.refresh_rounded,
+                      size: 14,
+                      color: AppTheme.textMuted,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Refreshes every ${AppConstants.slotPollIntervalSeconds}s',
+                      style: const TextStyle(
+                        color: AppTheme.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              data: (slots) {
-                if (slots.isEmpty) {
-                  return const EmptyStateWidget(
-                    icon: Icons.event_busy_rounded,
-                    title: 'No slots available',
-                    subtitle: 'Try a different date',
-                  );
-                }
+            ),
+            const SizedBox(height: 16),
 
-                return GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: slots.length,
+            // Date selector (horizontal scrolling)
+            EntranceAnimation(
+              delay: const Duration(milliseconds: 80),
+              child: SizedBox(
+                height: 76,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: dates.length,
                   itemBuilder: (context, index) {
-                    final slot = slots[index];
-                    final isBookedByMe =
-                        slot.isBooked &&
-                        slot.bookedByUserId == currentUser?.id;
+                    final date = dates[index];
+                    final isSelected = date == _selectedDate;
+                    final dt = DateTime.parse(date);
 
-                    return SlotTile(
-                      startTime: slot.startTime,
-                      endTime: slot.endTime,
-                      isBooked: slot.isBooked,
-                      isBookedByMe: isBookedByMe,
-                      isLoading: _bookingSlotId == slot.id,
-                      onTap: slot.isBooked ? null : () => _bookSlot(slot),
+                    return ScaleOnTouch(
+                      scaleFactor: 0.92,
+                      onTap: () {
+                        setState(() => _selectedDate = date);
+                      },
+                      child: Container(
+                        width: 58,
+                        margin: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          gradient: isSelected
+                              ? LinearGradient(
+                                  colors: [_sportColor, _sportColor.withValues(alpha: 0.85)],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                )
+                              : null,
+                          color: isSelected ? null : AppTheme.cardColor.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSelected
+                                ? _sportColor.withValues(alpha: 0.5)
+                                : AppTheme.textMuted.withValues(alpha: 0.12),
+                            width: isSelected ? 1.5 : 1.0,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: _sportColor.withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _dayName(dt),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white.withValues(alpha: 0.8)
+                                    : AppTheme.textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${dt.day}',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: isSelected ? Colors.white : AppTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            if (isSelected)
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                ),
+                              )
+                            else
+                              Text(
+                                _monthName(dt),
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  color: AppTheme.textMuted,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     );
                   },
-                );
-              },
+                ),
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 20),
+
+            // Slot legend
+            EntranceAnimation(
+              delay: const Duration(milliseconds: 140),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    _legendDot(AppTheme.slotAvailable.withValues(alpha: 0.6), 'Available'),
+                    const SizedBox(width: 16),
+                    _legendDot(AppTheme.textMuted.withValues(alpha: 0.4), 'Booked'),
+                    const SizedBox(width: 16),
+                    _legendDot(AppTheme.slotBookedByMe, 'Yours'),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Slot grid
+            Expanded(
+              child: slotsAsync.when(
+                loading: () =>
+                    const AppLoadingWidget(message: 'Loading slots...'),
+                error: (error, stack) => AppErrorWidget(
+                  message: error.toString(),
+                  onRetry: () => ref.invalidate(slotsProvider(_slotKey)),
+                ),
+                data: (slots) {
+                  if (slots.isEmpty) {
+                    return const EmptyStateWidget(
+                      icon: Icons.event_busy_rounded,
+                      title: 'No slots available',
+                      subtitle: 'Try a different date',
+                    );
+                  }
+
+                  return EntranceAnimation(
+                    delay: const Duration(milliseconds: 200),
+                    child: GridView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 0.95,
+                      ),
+                      itemCount: slots.length,
+                      itemBuilder: (context, index) {
+                        final slot = slots[index];
+                        final isBookedByMe =
+                            slot.isBooked &&
+                            slot.bookedByUserId == currentUser?.id;
+
+                        return SlotTile(
+                          startTime: slot.startTime,
+                          endTime: slot.endTime,
+                          isBooked: slot.isBooked,
+                          isBookedByMe: isBookedByMe,
+                          isLoading: _bookingSlotId == slot.id,
+                          onTap: slot.isBooked ? null : () => _bookSlot(slot),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -404,7 +464,7 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
             borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         Text(
           label,
           style: const TextStyle(

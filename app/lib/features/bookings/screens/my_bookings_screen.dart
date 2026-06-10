@@ -11,6 +11,8 @@ import '../providers/booking_provider.dart';
 import '../repository/booking_repository.dart';
 import '../widgets/booking_card.dart';
 
+import '../../../shared/widgets/motion_widgets.dart';
+
 /// My Bookings screen — shows all bookings for the current user.
 ///
 /// Features:
@@ -105,61 +107,69 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
       appBar: AppBar(
         title: const Text('My Bookings'),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(myBookingsProvider);
-        },
-        color: AppTheme.primaryColor,
-        child: bookingsAsync.when(
-          loading: () =>
-              const AppLoadingWidget(message: 'Loading your bookings...'),
-          error: (error, stack) => AppErrorWidget(
-            message: error.toString(),
-            onRetry: () => ref.invalidate(myBookingsProvider),
-          ),
-          data: (bookings) {
-            if (bookings.isEmpty) {
-              return ListView(
-                children: const [
-                  SizedBox(height: 100),
-                  EmptyStateWidget(
-                    icon: Icons.bookmark_border_rounded,
-                    title: 'No bookings yet',
-                    subtitle:
-                        'Book a slot from a venue to see it here',
-                  ),
-                ],
-              );
-            }
+      body: BackgroundGlow(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(myBookingsProvider);
+          },
+          color: AppTheme.primaryColor,
+          child: bookingsAsync.when(
+            loading: () =>
+                const AppLoadingWidget(message: 'Loading your bookings...'),
+            error: (error, stack) => AppErrorWidget(
+              message: error.toString(),
+              onRetry: () => ref.invalidate(myBookingsProvider),
+            ),
+            data: (bookings) {
+              if (bookings.isEmpty) {
+                return ListView(
+                  children: const [
+                    SizedBox(height: 100),
+                    EmptyStateWidget(
+                      icon: Icons.bookmark_border_rounded,
+                      title: 'No bookings yet',
+                      subtitle:
+                          'Book a slot from a venue to see it here',
+                    ),
+                  ],
+                );
+              }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: bookings.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: bookings.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: EntranceAnimation(
+                        delay: Duration.zero,
+                        child: Text(
+                          '${bookings.length} booking${bookings.length == 1 ? '' : 's'}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppTheme.textSecondary,
+                              ),
+                        ),
+                      ),
+                    );
+                  }
+
+                  final booking = bookings[index - 1];
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(
-                      '${bookings.length} booking${bookings.length == 1 ? '' : 's'}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: EntranceAnimation(
+                      delay: Duration(milliseconds: 100 + index * 80),
+                      child: BookingCard(
+                        booking: booking,
+                        isCancelling: _cancellingBookingId == booking.id,
+                        onCancel: () => _cancelBooking(booking.id),
+                      ),
                     ),
                   );
-                }
-
-                final booking = bookings[index - 1];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: BookingCard(
-                    booking: booking,
-                    isCancelling: _cancellingBookingId == booking.id,
-                    onCancel: () => _cancelBooking(booking.id),
-                  ),
-                );
-              },
-            );
-          },
+                },
+              );
+            },
+          ),
         ),
       ),
     );
