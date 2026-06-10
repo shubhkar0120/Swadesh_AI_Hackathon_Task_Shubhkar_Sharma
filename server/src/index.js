@@ -51,7 +51,11 @@ app.use(errorHandler);
 createSchema();
 seedDatabase();
 
-app.listen(PORT, () => {
-  console.log(`\n🏟️  QuickSlot server running at http://localhost:${PORT}`);
-  console.log(`   Health check: http://localhost:${PORT}/health\n`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n🏟️  QuickSlot server running at http://localhost:${PORT}`);
+    console.log(`   Health check: http://localhost:${PORT}/health\n`);
+  });
+}
+
+module.exports = app;

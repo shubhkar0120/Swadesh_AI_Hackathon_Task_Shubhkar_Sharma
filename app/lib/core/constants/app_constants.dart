@@ -5,7 +5,7 @@ class AppConstants {
   /// Base URL for the backend API.
   /// Change this to your machine's local IP for physical device testing.
   /// e.g., 'http://192.168.1.5:3000'
-  static const String baseUrl = 'http://192.168.1.7:3000';
+  static const String baseUrl = 'https://server-two-chi-98.vercel.app';
 
   /// API request timeout in milliseconds.
   static const int connectTimeout = 5000;
