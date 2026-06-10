@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -106,6 +107,7 @@ class _EntranceAnimationState extends State<EntranceAnimation>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
+  Timer? _delayTimer;
 
   @override
   void initState() {
@@ -126,15 +128,20 @@ class _EntranceAnimationState extends State<EntranceAnimation>
       curve: Curves.easeOutCubic,
     ));
 
-    Future.delayed(widget.delay, () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
+    if (widget.delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      _delayTimer = Timer(widget.delay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

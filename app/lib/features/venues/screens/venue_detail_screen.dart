@@ -25,6 +25,8 @@ import '../../../shared/widgets/motion_widgets.dart';
 /// 3. Handles booking with confirmation dialog
 /// 4. Shows conflict messages gracefully (409 from backend)
 /// 5. Auto-refreshes via polling every 10 seconds (bonus feature)
+enum SlotTimeFilter { all, morning, afternoon, evening }
+
 class VenueDetailScreen extends ConsumerStatefulWidget {
   final String venueId;
   final String venueName;
@@ -45,6 +47,7 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
   late String _selectedDate;
   String? _bookingSlotId; // Slot currently being booked (for loading state)
   Timer? _pollTimer;
+  SlotTimeFilter _activeFilter = SlotTimeFilter.all;
 
   @override
   void initState() {
@@ -400,6 +403,77 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Time of day filter chips
+            EntranceAnimation(
+              delay: const Duration(milliseconds: 160),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: SlotTimeFilter.values.map((filter) {
+                      final isSelected = _activeFilter == filter;
+                      String label;
+                      IconData icon;
+                      switch (filter) {
+                        case SlotTimeFilter.morning:
+                          label = 'Morning (6am-12pm)';
+                          icon = Icons.wb_sunny_rounded;
+                          break;
+                        case SlotTimeFilter.afternoon:
+                          label = 'Afternoon (12pm-5pm)';
+                          icon = Icons.wb_cloudy_rounded;
+                          break;
+                        case SlotTimeFilter.evening:
+                          label = 'Evening (5pm-10pm)';
+                          icon = Icons.nights_stay_rounded;
+                          break;
+                        case SlotTimeFilter.all:
+                          label = 'All Day';
+                          icon = Icons.schedule_rounded;
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          showCheckmark: false,
+                          avatar: Icon(
+                            icon, 
+                            size: 14, 
+                            color: isSelected ? Colors.white : AppTheme.textSecondary
+                          ),
+                          label: Text(label),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() => _activeFilter = filter);
+                            }
+                          },
+                          selectedColor: _sportColor,
+                          backgroundColor: AppTheme.cardColor.withValues(alpha: 0.6),
+                          labelStyle: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.white : AppTheme.textSecondary,
+                          ),
+                          side: BorderSide(
+                            color: isSelected 
+                                ? _sportColor.withValues(alpha: 0.5) 
+                                : AppTheme.textMuted.withValues(alpha: 0.15),
+                            width: 1.0,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+
             // Slot grid
             Expanded(
               child: slotsAsync.when(
@@ -410,11 +484,26 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                   onRetry: () => ref.invalidate(slotsProvider(_slotKey)),
                 ),
                 data: (slots) {
-                  if (slots.isEmpty) {
+                  // Filter slots by time of day
+                  final filteredSlots = slots.where((slot) {
+                    final startHour = int.parse(slot.startTime.split(':')[0]);
+                    switch (_activeFilter) {
+                      case SlotTimeFilter.morning:
+                        return startHour >= 6 && startHour < 12;
+                      case SlotTimeFilter.afternoon:
+                        return startHour >= 12 && startHour < 17;
+                      case SlotTimeFilter.evening:
+                        return startHour >= 17;
+                      case SlotTimeFilter.all:
+                        return true;
+                    }
+                  }).toList();
+
+                  if (filteredSlots.isEmpty) {
                     return const EmptyStateWidget(
-                      icon: Icons.event_busy_rounded,
-                      title: 'No slots available',
-                      subtitle: 'Try a different date',
+                      icon: Icons.filter_alt_off_rounded,
+                      title: 'No matching slots',
+                      subtitle: 'Try selecting a different time filter',
                     );
                   }
 
@@ -428,9 +517,9 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                         mainAxisSpacing: 10,
                         childAspectRatio: 0.95,
                       ),
-                      itemCount: slots.length,
+                      itemCount: filteredSlots.length,
                       itemBuilder: (context, index) {
-                        final slot = slots[index];
+                        final slot = filteredSlots[index];
                         final isBookedByMe =
                             slot.isBooked &&
                             slot.bookedByUserId == currentUser?.id;

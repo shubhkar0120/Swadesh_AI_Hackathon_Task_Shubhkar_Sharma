@@ -1,7 +1,7 @@
-/// Custom exception types for the app.
-///
-/// These provide structured error handling that maps to
-/// specific UI states (error messages, retry options).
+// Custom exception types for the app.
+//
+// These provide structured error handling that maps to
+// specific UI states (error messages, retry options).
 
 class AppException implements Exception {
   final String message;
@@ -15,8 +15,7 @@ class AppException implements Exception {
 
 /// Network-related exceptions
 class NetworkException extends AppException {
-  const NetworkException([String message = 'Network error. Please check your connection.'])
-      : super(message);
+  const NetworkException([super.message = 'Network error. Please check your connection.']);
 }
 
 /// Server returned an error
@@ -32,12 +31,10 @@ class SlotAlreadyBookedException extends AppException {
 
 /// Unauthorized / forbidden action
 class ForbiddenException extends AppException {
-  const ForbiddenException([String message = 'You are not authorized to perform this action.'])
-      : super(message);
+  const ForbiddenException([super.message = 'You are not authorized to perform this action.']);
 }
 
 /// Resource not found
 class NotFoundException extends AppException {
-  const NotFoundException([String message = 'Resource not found.'])
-      : super(message);
+  const NotFoundException([super.message = 'Resource not found.']);
 }

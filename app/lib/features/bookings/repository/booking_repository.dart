@@ -1,30 +1,26 @@
+import 'dart:convert';
+import 'dart:developer' as dev;
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/errors/app_exceptions.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../models/booking.dart';
 
-/// Repository for booking-related API calls.
+/// Repository for booking-related API calls with local offline cache.
 ///
 /// Handles:
 /// - POST /bookings — book a slot (concurrency-safe)
-/// - DELETE /bookings/:id — cancel a booking
-/// - GET /users/:id/bookings — get user's bookings
-///
-/// The X-User-Id header is set per-request, not globally,
-/// because different users can be tested on the same device.
+/// - DELETE /bookings/:id — cancel a booking (updates cache)
+/// - GET /users/:id/bookings — get user's bookings (reads/writes offline cache)
 class BookingRepository {
   final Dio _dio;
 
   BookingRepository(this._dio);
 
   /// Books a slot for a user.
-  ///
-  /// Returns the created Booking on success (201).
-  /// Throws SlotAlreadyBookedException on 409 (double-booking).
-  /// Throws other exceptions for other errors.
   Future<Booking> bookSlot({
     required String slotId,
     required String userId,
@@ -51,12 +47,25 @@ class BookingRepository {
         ApiEndpoints.cancelBooking(bookingId),
         options: Options(headers: {'X-User-Id': userId}),
       );
+      // Remove from offline cache
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final cachedData = prefs.getString('bookings_cache_$userId');
+        if (cachedData != null) {
+          final List<dynamic> decoded = jsonDecode(cachedData);
+          final updated = decoded.where((item) => item['id'] != bookingId).toList();
+          await prefs.setString('bookings_cache_$userId', jsonEncode(updated));
+        }
+      } catch (cacheError) {
+        // Silently ignore cache write errors
+        dev.log('[CACHE] Failed to update cache', error: cacheError);
+      }
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  /// Gets all bookings for a user (with venue + slot details).
+  /// Gets all bookings for a user (with venue + slot details) with offline caching.
   Future<List<Booking>> getUserBookings(String userId) async {
     try {
       final response = await _dio.get(
@@ -64,8 +73,31 @@ class BookingRepository {
         options: Options(headers: {'X-User-Id': userId}),
       );
       final List<dynamic> data = response.data;
-      return data.map((json) => Booking.fromJson(json)).toList();
+      final bookings = data.map((json) => Booking.fromJson(json)).toList();
+
+      // Save to offline cache
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('bookings_cache_$userId', jsonEncode(data));
+      } catch (cacheError) {
+        dev.log('[CACHE] Failed to write cache', error: cacheError);
+      }
+
+      return bookings;
     } on DioException catch (e) {
+      // Try loading from offline cache
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final cachedData = prefs.getString('bookings_cache_$userId');
+        if (cachedData != null) {
+          final List<dynamic> decoded = jsonDecode(cachedData);
+          dev.log('[CACHE] Loading bookings offline for user $userId');
+          return decoded.map((json) => Booking.fromJson(json)).toList();
+        }
+      } catch (cacheError) {
+        dev.log('[CACHE] Failed to read cache', error: cacheError);
+      }
+
       throw _handleDioError(e);
     }
   }

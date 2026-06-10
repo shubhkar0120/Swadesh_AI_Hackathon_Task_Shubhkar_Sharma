@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/app_constants.dart';
 
@@ -23,7 +24,7 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(LogInterceptor(
     requestBody: true,
     responseBody: true,
-    logPrint: (obj) => print('[DIO] $obj'),
+    logPrint: (obj) => debugPrint('[DIO] $obj'),
   ));
 
   return dio;
