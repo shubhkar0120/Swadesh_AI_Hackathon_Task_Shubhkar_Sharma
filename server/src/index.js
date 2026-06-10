@@ -32,6 +32,23 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/', (req, res) => {
+  res.json({
+    name: 'QuickSlot Backend API',
+    version: '1.0.0',
+    description: 'Concurrency-safe sports slot booking engine',
+    status: 'active',
+    healthCheck: '/health',
+    endpoints: {
+      venues: '/venues',
+      slots: '/venues/:id/slots?date=YYYY-MM-DD',
+      bookings: '/bookings',
+      userBookings: '/users/:id/bookings',
+      usersList: '/users'
+    }
+  });
+});
+
 app.use('/venues', venueRoutes);
 app.use('/bookings', bookingRoutes);
 app.use('/users', userRoutes);
