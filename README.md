@@ -1,16 +1,53 @@
-# swadesh_ai_hackathon
+# QuickSlot
 
-A new Flutter project.
+A mini app for booking sports slots (badminton courts / turf grounds). Users browse venues, view time slots for a date, and book one — with concurrency-safe booking that prevents double-booking.
 
-## Getting Started
+## Project Structure
 
-This project is a starting point for a Flutter application.
+```
+quickslot/
+├── app/          # Flutter mobile app
+├── server/       # Node.js + Express + SQLite backend
+├── docs/         # Architecture diagrams
+└── README.md
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Setup
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Backend
+```bash
+cd server
+npm install
+npm start        # Starts on http://localhost:3000
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Flutter App
+```bash
+cd app
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter run
+```
+
+> **Note**: For physical device testing, update the API base URL in `app/lib/core/constants/app_constants.dart` to your machine's local IP.
+
+## Architecture
+
+_To be completed after implementation._
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Mobile App | Flutter + Riverpod + GoRouter + Dio + Freezed |
+| Backend | Node.js + Express |
+| Database | SQLite (better-sqlite3) |
+| Concurrency | UNIQUE constraint on slot_id + SQLite serialized writes |
+
+## What I'd Do With One More Day
+
+_To be completed after implementation._
+
+## AI Usage Note
+
+_To be completed after implementation._
