@@ -7,9 +7,11 @@ import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../models/booking.dart';
 import '../providers/booking_provider.dart';
 import '../repository/booking_repository.dart';
 import '../widgets/booking_card.dart';
+import '../../venues/providers/venue_provider.dart';
 
 import '../../../shared/widgets/motion_widgets.dart';
 
@@ -29,7 +31,7 @@ class MyBookingsScreen extends ConsumerStatefulWidget {
 class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
   String? _cancellingBookingId;
 
-  Future<void> _cancelBooking(String bookingId) async {
+  Future<void> _cancelBooking(Booking booking) async {
     final user = ref.read(authProvider);
     if (user == null) return;
 
@@ -61,6 +63,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
 
     if (confirm != true || !mounted) return;
 
+    final bookingId = booking.id;
     setState(() => _cancellingBookingId = bookingId);
 
     try {
@@ -84,6 +87,12 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
 
       // Refresh bookings
       ref.invalidate(myBookingsProvider);
+
+      // Refresh slots grid instantly for this specific venue + date
+      if (booking.venue != null && booking.slot != null) {
+        final slotKey = '${booking.venue!.id}|${booking.slot!.date}';
+        ref.invalidate(slotsProvider(slotKey));
+      }
     } on AppException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,7 +171,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen> {
                       child: BookingCard(
                         booking: booking,
                         isCancelling: _cancellingBookingId == booking.id,
-                        onCancel: () => _cancelBooking(booking.id),
+                        onCancel: () => _cancelBooking(booking),
                       ),
                     ),
                   );
