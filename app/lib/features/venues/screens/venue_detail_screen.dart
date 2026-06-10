@@ -10,6 +10,7 @@ import '../../../shared/widgets/loading_widget.dart';
 import '../../../shared/widgets/error_widget.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../bookings/providers/booking_provider.dart';
 import '../../bookings/repository/booking_repository.dart';
 import '../models/slot.dart';
 import '../providers/venue_provider.dart';
@@ -156,8 +157,9 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
         ),
       );
 
-      // Refresh the slot grid
+      // Refresh the slot grid and user's bookings
       ref.invalidate(slotsProvider(_slotKey));
+      ref.invalidate(myBookingsProvider);
     } on SlotAlreadyBookedException {
       if (!mounted) return;
 
