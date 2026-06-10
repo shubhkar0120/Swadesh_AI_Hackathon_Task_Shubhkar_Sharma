@@ -70,23 +70,51 @@ class VenueListScreen extends ConsumerWidget {
             icon: const Icon(Icons.bookmark_rounded),
             tooltip: 'My Bookings',
           ),
-          // User indicator
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Chip(
-              avatar: const Icon(Icons.person, size: 16, color: AppTheme.primaryColor),
-              label: Text(
-                currentUser?.name ?? 'Guest',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
+          // User indicator (Tapping opens a PopupMenu with Logout option)
+          PopupMenuButton<void>(
+            offset: const Offset(0, 48),
+            color: AppTheme.surfaceLight,
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                onTap: () {
+                  ref.read(authProvider.notifier).logout();
+                  context.go('/');
+                },
+                child: const Row(
+                  children: [
+                    Icon(Icons.logout_rounded, color: AppTheme.errorColor, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: AppTheme.errorColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              backgroundColor: AppTheme.surfaceLight.withValues(alpha: 0.8),
-              side: BorderSide(color: AppTheme.textMuted.withValues(alpha: 0.15)),
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
+            ],
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Chip(
+                avatar: const Icon(Icons.person, size: 16, color: AppTheme.primaryColor),
+                label: Text(
+                  currentUser?.name ?? 'Guest',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                backgroundColor: AppTheme.surfaceLight.withValues(alpha: 0.8),
+                side: BorderSide(color: AppTheme.textMuted.withValues(alpha: 0.15)),
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
             ),
           ),
         ],
